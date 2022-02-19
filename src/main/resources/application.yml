@@ -1,0 +1,10 @@
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/tradelab_account_balance
+    username: test
+    password: test
+  liquibase:
+    url: jdbc:postgresql://localhost:5432/tradelab_account_balance
+    user: test
+    password: test
+    liquibase-schema: liquibase

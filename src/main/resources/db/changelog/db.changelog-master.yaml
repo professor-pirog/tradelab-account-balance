@@ -1,0 +1,97 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-user-table
+      author: Pirog
+      changes:
+        - createTable:
+            tableName: user
+            columns:
+              - column:
+                  name: id
+                  type: varchar(36)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: login
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: password
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: create-action-table
+      author: Pirog
+      changes:
+        - createTable:
+            tableName: action
+            columns:
+              - column:
+                  name: id
+                  type: varchar(36)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: action_type
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: timestamp
+                  type: datetime
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: varchar(36)
+              - column:
+                  name: amount_usdt
+                  type: number
+        - addForeignKeyConstraint:
+            constraintName: fk_action_user
+            baseTableName: action
+            baseColumnNames: user_id
+            referencedTableName: user
+            referencedColumnNames: id
+  - changeSet:
+      id: create-user-balance-table
+      author: Pirog
+      changes:
+        - createTable:
+            tableName: user_balance
+            columns:
+              - column:
+                  name: action_id
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: balance_usdt
+                  type: number
+              - column:
+                  name: balance_proportion
+                  type: number
+        - addForeignKeyConstraint:
+            constraintName: fk_user_balance_action
+            baseTableName: user_balance
+            baseColumnNames: action_id
+            referencedTableName: action
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            constraintName: fk_user_balance_user
+            baseTableName: user_balance
+            baseColumnNames: user_id
+            referencedTableName: user
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: user_balance
+            columnNames:  action_id, user_id

@@ -1,0 +1,26 @@
+POST http://localhost:8080/balance/replenishment
+Content-Type: application/json
+
+{
+  "amountUSD": 1000
+}
+
+###
+
+POST http://localhost:8080/balance/withdrawal
+Content-Type: application/json
+
+{
+  "amountUSD": 1000
+}
+
+###
+
+POST http://localhost:8080/fee-payment
+Content-Type: application/json
+
+{
+  "amountUSD": 1000
+}
+
+###
