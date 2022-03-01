@@ -1,5 +1,7 @@
 package com.pirogsoft.tradelabaccountbalance.service.balance
 
+import com.pirogsoft.tradelabaccountbalance.model.Action
+import com.pirogsoft.tradelabaccountbalance.model.UserBalance
 import java.math.BigDecimal
 
 interface BalanceService {
@@ -8,4 +10,5 @@ interface BalanceService {
 
     suspend fun startWithdrawProcess(userId: String): String
 
+    suspend fun startCommissionProcess(): String
 }

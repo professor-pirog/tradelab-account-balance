@@ -51,6 +51,8 @@ databaseChangeLog:
               - column:
                   name: amount_usdt
                   type: number
+                  constraints:
+                    nullable: false
         - addForeignKeyConstraint:
             constraintName: fk_action_user
             baseTableName: action

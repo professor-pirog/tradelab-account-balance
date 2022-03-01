@@ -26,26 +26,40 @@ class BalanceServiceImpl(
 ) : BalanceService {
 
     override suspend fun startReplenishProcess(userId: String): String {
-        return startReplenishOrWithdrawProcess(userId, ActionType.REPLENISH)
+        return startProcessAction(ActionType.REPLENISH, userId)
     }
 
     override suspend fun startWithdrawProcess(userId: String): String {
-        return startReplenishOrWithdrawProcess(userId, ActionType.WITHDRAW)
+        return startProcessAction(ActionType.WITHDRAW, userId)
     }
 
-    private suspend fun startReplenishOrWithdrawProcess(userId: String, actionType: ActionType): String {
+    override suspend fun startCommissionProcess(): String {
+        return startProcessAction(ActionType.COMMISSION)
+    }
+
+    private suspend fun getCurrentUserBalances(): Map<String, BigDecimal> {
+        val (generalBalance, lastActionUserBalances) = getCurrentBalanceAndLastActionBalances()
+        return lastActionUserBalances.associate { it.userId to generalBalance * it.balanceProportion }
+    }
+
+    private suspend fun saveActionAndUserBalances(action: Action, balances: List<UserBalance>) {
+        balances.forEach { userBalanceRepository.saveUserBalance(it) }
+        actionRepository.saveAction(action)
+    }
+
+    private suspend fun startProcessAction(actionType: ActionType, userId: String? = null): String {
         val operationIdFuture = CompletableFuture<String>()
         coroutineScope {
             launch(Dispatchers.IO) {
                 //Запускаем процесс пополнения/снятия
-                replenishOrWithdraw(userId, operationIdFuture, actionType)
+                processBalanceAction(operationIdFuture, actionType, userId)
             }
         }
-        return operationIdFuture.await();
+        return operationIdFuture.await()
     }
 
     @Transactional
-    suspend fun replenishOrWithdraw(userId: String, operationIdFuture: CompletableFuture<String>, actionType: ActionType) {
+    suspend fun processBalanceAction(operationIdFuture: CompletableFuture<String>, actionType: ActionType, userId: String?) {
         //TODO: Блокируем табличку actions на создание новых записей
         //Считываем текущий баланс пользователей (по текущему балансу на бирже и записям из БД)
         val userBalances = getCurrentUserBalances()
@@ -60,7 +74,7 @@ class BalanceServiceImpl(
         saveActionAndUserBalances(newAction, newUserBalances)
     }
 
-    private suspend fun recalculateBalances(userBalances: Map<String, BigDecimal>, actionType: ActionType, userId: String): Pair<Action, List<UserBalance>> {
+    private suspend fun recalculateBalances(userBalances: Map<String, BigDecimal>, actionType: ActionType, userId: String?): Pair<Action, List<UserBalance>> {
         // Получаем счет на бирже
         val newAccountBalance = currentBalanceService.getCurrentBalance()
         // Считаем сколько денег мы перекинули
@@ -69,10 +83,11 @@ class BalanceServiceImpl(
         val newAction = Action(
             actionType = actionType,
             userId = userId,
-            amountUSDT = changeAmountUSDT.run { if (actionType == ActionType.WITHDRAW) negate() else this }
+            amountUSDT = changeAmountUSDT.run { if (actionType == ActionType.WITHDRAW || actionType == ActionType.COMMISSION) negate() else this }
         )
+
         // Пересчитываем балансы пользователей
-        val newUserBalances = userBalances.map {
+        val newUserBalances = if(actionType == ActionType.WITHDRAW || actionType == ActionType.COMMISSION) userBalances.map {
             val newUserUSDTBalance = if (it.key == userId) it.value + changeAmountUSDT else it.value
             UserBalance(
                 actionId = newAction.id,
@@ -80,14 +95,18 @@ class BalanceServiceImpl(
                 balanceUSDT = newUserUSDTBalance,
                 balanceProportion = newAccountBalance / newUserUSDTBalance
             )
+        } else {
+            //
+
+
+            userBalances.map {  }
         }
         return newAction to newUserBalances
     }
 
-    private suspend fun saveActionAndUserBalances(action: Action, balances: List<UserBalance>) {
-        balances.forEach { userBalanceRepository.saveUserBalance(it) }
-        actionRepository.saveAction(action)
-    }
+    //TODO:
+
+
 
     private suspend fun getCurrentBalanceAndLastActionBalances(): Pair<BigDecimal, List<UserBalance>> = coroutineScope {
         val currentBalanceFuture = async {
@@ -99,10 +118,6 @@ class BalanceServiceImpl(
         return@coroutineScope currentBalanceFuture.await() to userBalancesFuture.await()
     }
 
-    private suspend fun getCurrentUserBalances(): Map<String, BigDecimal> {
-        val (generalBalance, lastActionUserBalances) = getCurrentBalanceAndLastActionBalances()
-        return lastActionUserBalances.associate { it.userId to generalBalance * it.balanceProportion }
-    }
 
 
 }

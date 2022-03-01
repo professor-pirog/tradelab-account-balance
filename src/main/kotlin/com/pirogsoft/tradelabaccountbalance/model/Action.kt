@@ -8,6 +8,6 @@ data class Action(
     val id: String = UUID.randomUUID().toString(),
     val timeStamp: Instant = Instant.now(),
     val actionType: ActionType,
-    val userId: String?,
-    val amountUSDT: BigDecimal?
+    val amountUSDT: BigDecimal,
+    val userId: String?
 )

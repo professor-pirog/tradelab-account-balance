@@ -15,8 +15,8 @@ class ReactiveActionRepository(private val databaseClient: DatabaseClient) : Act
             .bind(ColumnNames.ID, action.id)
             .bind(ColumnNames.ACTION_TYPE, action.actionType)
             .bind(ColumnNames.TIMESTAMP, action.timeStamp)
+            .bind(ColumnNames.AMOUNT_USDT, action.amountUSDT)
             .bindNullable(ColumnNames.USER_ID, action.userId)
-            .bindNullable(ColumnNames.AMOUNT_USDT, action.amountUSDT)
             .then()
             .awaitSingle()
     }
